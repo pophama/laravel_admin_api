@@ -26,11 +26,20 @@ services:
     restart: unless-stopped
     tty: true
     ports:
-      - '80:80'
+      - '8000:80'
       - '443:443'
     volumes:
       - './:/var/www'
       - './nginx/conf.d/:/etc/nginx/conf.d/'
+    networks:
+      - app-network
+  frontend:
+    image: 'pophama/admin_vue'
+    container_name: frontend
+    restart: unless-stopped
+    tty: true
+    ports:
+      - '8090:80'
     networks:
       - app-network
   db:
@@ -50,15 +59,33 @@ services:
       - './mysql/my.cnf:/etc/mysql/my.cnf'
     networks:
       - app-network
-  4f37656df39c:
-    image: 'sha256:4f37656df39c8d5a749d5ebf63e1cb1e7968985fb7c10edcbae6cc7802da6389'
+  phpmyadmin:
+    image: 'phpmyadmin/phpmyadmin'
+    container_name: pma
+    restart: unless-stopped
+    tty: true
     ports:
-      - '8080'
+      - '8081:80'
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      PMA_ARBITRARY: 1
+    restart: always
+    networks:
+      - app-network
+  prometheus:
+    image: prom/prometheus:v2.21.0
+    ports:
+        - 9000:9090
     volumes:
-      - 'D:\dockerVolume\jinkins:/var/run/docker.sock '
+        - ./prometheus:/etc/prometheus
+        - prometheus-data:/prometheus
+    command: --web.enable-lifecycle  --config.file=/etc/prometheus/prometheus.yml
 networks:
   app-network:
     driver: bridge
 volumes:
   dbdata:
+    driver: local
+  prometheus-data:
     driver: local
